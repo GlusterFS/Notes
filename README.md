@@ -10,7 +10,7 @@ You can check out [GlusterFS's community Website here](http://www.gluster.org/).
 
 ***
 
-## Installation
+## Quick Start Guide
 
 #### Step 1 – Have at least two nodes
 
