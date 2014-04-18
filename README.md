@@ -6,7 +6,7 @@ access to large files. With GlusterFS, you can have enterprise- or scientific-re
 and running in minutes, but it wouldn’t be our first choice for the type of simple file sharing that 
 Samba or NFS are usually used for.
 
-You can check out [GlusterFS community Website here](http://www.gluster.org/).
+You can check out [GlusterFS's community Website here](http://www.gluster.org/).
 
 ***
 
