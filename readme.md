@@ -25,6 +25,17 @@ You can check out [GlusterFS's community Website here](http://www.gluster.org/).
 #### Step 7 - Testing the GlusterFS volume
 
 ***
+## Tips and Tricks
+
+####Problem: Attaching a Peer If you have cloned a virtual machine
+
+If you thought you would save some time configuring each system by just performing all the necessary installation steps on a vm, and then cloning it, you’re in trouble! You will be able to attach your peer, but you won’t be able to create any sort of volume using the two nodes.
+
+When glusterfs-server package is first installed, it creates a node UUID file at /var/lib/glusterd/glusterd.info.
+So, when gluster resolves the hostname to a UUID, it creates a conflict. As a result of the VM cloning, both nodes have the same UUID.  Since gluster seems to perform it’s operations based on peer UUIDs, it’s impossible to remove using the gluster command.
+
+**Solution:** Stop the gluster service on the nodes.  On node2, rm the glusterd.info file.  Next, we have to manually hack the peer out of the configs.  Simply and remove the file that shares the UUID in the folder /var/lib/glusterd/peers/. Upon restarting of the service, gluster will create a new UUID for the system, and the problematic ‘node2 is localhost’ issue will be resolved for good.
+
 ## Performance
 
 We are using GlusterFS to replicate storage between two physical servers for two reasons; load balancing and data redundancy. With GlusterFS we also have several ways to improve performance but before we look into those, we need to be sure that is it the GlusterFS layer which is causing the problem. For example, if your disks or network is slow, what chance does GlusterFS have of giving you good performance? You also need to understand how the individual components work under the load of your expected environment. The disks may work perfectly well when you use dd to create a huge file, but what about when lots of users create lots of files all at the same time? You can break down performance into three key areas:
