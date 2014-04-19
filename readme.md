@@ -33,7 +33,7 @@ We are using GlusterFS to replicate storage between two physical servers for two
 * Filesystem IO performance - the file system local to each GlusterFS instance.
 * GlusterFS – the actual GlusterFS process.
 
-[more about GlusterFS performance](performance.md)
+[More about GlusterFS performance](performance.md).
 
 ***
 ## Security
