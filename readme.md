@@ -47,3 +47,5 @@ So you want to enable SSL on GlusterFS and you are lost? Well you are not alone 
 ***
 #### Resources
 [Documenting the undocumented](http://www.gluster.org/community/documentation/index.php/Documenting_the_undocumented)
+
+http://superrb.com/blog/2011/10/14/high-availability-file-system-for-load-balanced-webservers-with-glusterfs-and-ubuntu
