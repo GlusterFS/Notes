@@ -25,23 +25,17 @@ You can check out [GlusterFS's community Website here](http://www.gluster.org/).
 #### Step 7 - Testing the GlusterFS volume
 
 ***
-
 ## Performance
-
 ***
-
+## Security
+So you want to enable SSL on GlusterFS and you are lost? Well you are not alone - SSL mode is not documented and you can find little info about it on mailing lists. I will try to help you out [with these small tips](security.md).
+***
 ## Troubleshooting
-
 ***
-
 ## FAQ
-
 ***
-
 ## Changes
-
 ***
-
 #### Resources
 
 #### Resources
