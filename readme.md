@@ -1,8 +1,8 @@
 # GlusterFS
 
-GlusterFS is a file system that is designed to provide network storage that can be made redundant, 
+GlusterFS is a distributed files system that is designed to provide network storage that can be made redundant, 
 fault-tolerant and scalable. It’s particularly well suited to applications that require high-performance 
-access to large files.
+access to large files. Gluster File System allows you to create a single volume of storage which spans multiple disks, multiple machines and even multiple data centres.
 
 You can check out [GlusterFS's community Website here](http://www.gluster.org/).
 
