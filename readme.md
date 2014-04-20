@@ -149,6 +149,84 @@ The below example will use three servers:
 GlusterFS uses an SSH connection to the remote host using SSH keys instead of passwords. We’ll need to create an SSH key using ssh-keygen to use for our connection. Run the below command and press return when asked to enter the passphrase to create a key without a passphrase.
 
 ```
+ssh-keygen -f /var/lib/glusterd/geo-replication/secret.pem
+```
+
+Now you need to copy the public certificate to your remote server in the authorized_keys file. The remote user must be a super user (currently a limitation of GlusterFS) which is root in the below example. If you have multiple GlusterFS volumes in a cluster then you will need to copy the key to all GlusterFS servers.
+
+```
+cat /var/lib/glusterd/geo-replication/secret.pem.pub | ssh root@remote.jamescoyle.net "cat >> ~/.ssh/authorized_keys"
+```
+
+Make sure the remote server has glusterfs-server installed. Run the below command to install glusterfs-server on remote.jamescoyle.net.
+
+Create a folder on remote.jamescoyle.net which will be used for the remote replication. All data which transferrs to this machine will be stored in this folder.
+
+```
+mkdir /gluster
+mkdir /gluster/geo-replication
+```
+
+Create the geo-replication volume with Gluster and replace the below values with your own:
+
+* [SOURCE_DATASTORE] – is the local Gluster data volume which will be replicated to the remote server.
+* [REMOTE_SERVER] – is the remote server to receive all the replication data.
+* [REMOATE_PATH] – is the path on the remote server to store the files.
+
+```
+gluster volume geo-replication [SOURCE_DATASTORE] [REMOTE_SERVER]:[REMOTE_PATH] start
+```
+
+Example:
+
+```
+gluster volume geo-replication datastore remote.jamescoyle.net:/gluster/geo-replication/ start
+ 
+Starting geo-replication session between datastore & remote.jamescoyle.net:/gluster/geo-replication/ has been successful
+```
+
+Sometimes on the remote machine, gsyncd (part of the GlusterFS package) may be installed in a different location to the local GlusterFS nodes.
+
+Your log file may show a message similar to below:
+
+```
+Popen: ssh> bash: /usr/lib/x86_64-linux-gnu/glusterfs/gsyncd: No such file or directory
+```
+
+In this scenario you can specify the config command the remote gsyncd location.
+
+```
+gluster volume geo-replication datastore remote.jamescoyle.net:/gluster/geo-replication config remote-gsyncd /usr/lib/glusterfs/glusterfs/gsyncd
+```
+
+You will then need to run the start command to start the volume synchronisation.
+
+```
+gluster volume geo-replication datastore remote.jamescoyle.net:/gluster/geo-replication/ start
+```
+
+You can view the status of your replication task by running the status command.
+
+```
+gluster volume geo-replication datastore remote.jamescoyle.net:/gluster/geo-replication/ status
+```
+
+You can stop your volume replication at any time by running the stop command.
+
+```
+gluster volume geo-replication datastore remote.jamescoyle.net:/gluster/geo-replication/ stop
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 ***
