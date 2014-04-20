@@ -132,6 +132,24 @@ This example mounts the volume "testvolume" from the Gluster node 10.1.1.1. The 
 
 Once the volume is mounted, Linux treats it just as any other disk resource. Multiple clients can mount the same volume and work with it at the same time.
 
+#### Synchronise to a remote server using geo replication
+
+GlusterFS can be used to synchronise a directory to a remote server on a local network for data redundancy or load balancing to provide a highly scalable and available file system.
+
+The problem is when the storage you would like to replicate to is on a remote network, possibly in a different location, GlusterFS does not work very well. This is because GlusterFS is not designed to work when there is a high latency between replication nodes.
+
+GlusterFS provides a feature called geo replication to perform batch based replication of a local volume to a remote machine over SSH.
+
+The below example will use three servers:
+
+* gfs1.jamescoyle.net is one of the two running GlusterFS volume servers.
+* gfs2.jamescoyle.net is the second of the two running GlusterFS volume servers. gfs1 and gfs2 both server a single GlusterFS replicated volume called datastore.
+* remote.jamescoyle.net is the remote file server which the GlusterFS volume will be replicated to.
+* 
+GlusterFS uses an SSH connection to the remote host using SSH keys instead of passwords. We’ll need to create an SSH key using ssh-keygen to use for our connection. Run the below command and press return when asked to enter the passphrase to create a key without a passphrase.
+
+```
+
 
 ***
 ## Tips and Tricks
@@ -158,18 +176,46 @@ We are using GlusterFS to replicate storage between two physical servers for two
 ***
 ## Security
 
-For optimal performance and security you should run the Gluster cluster inside a private and secured network. In such a network you can disable the default CentOS firewall because the network should be accessible only by trusted clients. To do this, use the command chkconfig iptables off && service iptables stop.
+When you create a new GlusterFS Volume it is publicly available for any server on the network to read. For optimal performance and security you should run the Gluster cluster inside a private and secured network. In such a network you can disable the default CentOS firewall because the network should be accessible only by trusted clients. To do this, use the command `chkconfig iptables off && service iptables stop`.
 
-If you cannot provide a private network for the storage cluster, you can use iptables to allow only predefined clients to access Gluster's services. To do so, allow the following with iptables:
+File servers do not generally have firewalls as they are hosted in a secure zone of a private network. Just because it’s secure doesn’t mean you should leave it wide open for anyone with access to connect to.
 
-RPC incoming connectivity – Gluster's processes communicate using RPC, so RCP's port, TCP and UDP port 111, has to be allowed for incoming connections. Use the commands iptables -I INPUT -m state --state NEW -m tcp -p tcp -s X.X.X.X/24 --dport 111 -j ACCEPT; iptables -I INPUT -m state --state NEW -m udp -p udp -s X.X.X.X/24 --dport 111 -j ACCEPT;.
-Gluster's own services – For Gluster to access its bricks on each cluster node, you have to allow TCP ports 24007, 24008, and 24009, plus an additional number of ports in sequence equivalent to the number of bricks across all volumes. Thus if you have two bricks in the cluster, you have to allow ports from 24007 to 24011 (24009 plus 2). The command for this is iptables -A INPUT -m state --state NEW -m tcp -p tcp -s X.X.X.X/24 --dport 24007:24011 -j ACCEPT.
+Using the auth.allow and auth.reject arguments in GlusterFS we can choose which IP addresses can access the volume. Access is provided at volume level, therefore you will need to alter access permissions on every new volume you create.
+
+Run the below command on each server changing [VOLUME] to match the volume to be accessed and [IP ADDRESS] to be an IP address of the server which can connect to the current server.
+```
+gluster volume set [VOLUME] auth.allow [IP ADDRESS]
+```
+[IP ADDRESS] does not have to be a single IP address. You can also use an asterisk [*] as a wildcard, or multiple addresses separated by a comma [,]. The below example allows only servers with an IP address on the 10.1.1.x range, and 10.5.5.1 to access volume datastore.. All other servers will be denied access to the volume.
+```
+gluster volume set datastore auth.allow 10.1.1.*,10.5.5.1
+```
+
+If you can, your storage servers should be in a secure zone in your network removing the need to firewall each machine. Inspecting packets incurs an overhead, not something you need on a high performance file server so you should not run a file server in an insecure zone.
+
+If you cannot provide a private network for the storage cluster, you can use iptables to allow only predefined clients to access Gluster's services. You will need to allow several ports for GlusterFS to communicate with clients and other servers. The following ports are all TCP (please note that brick ports have changed since version 3.4):
+
+* 24007 – Gluster Daemon
+* 24008 – Management
+* 24009 and greater (GlusterFS versions less than 3.4) OR
+* 49152 (GlusterFS versions 3.4 and later) - Each brick for every volume on your host requires it’s own port. For every new brick, one new port will be used starting at 24009 for GlusterFS versions below 3.4 and 49152 for version 3.4 and above. If you have one volume with two bricks, you will need to open 24009 – 24010 (or 49152 – 59153).
+* 38465 – 38467 - this is required if you by the Gluster NFS service.
+The following ports are TCP and UDP:
+* 111 – portmapper
+
+To do so, allow the following with iptables:
+
+RPC incoming connectivity – Gluster's processes communicate using RPC, so RCP's port, TCP and UDP port 111, has to be allowed for incoming connections. Use the commands `iptables -I INPUT -m state --state NEW -m tcp -p tcp -s X.X.X.X/24 --dport 111 -j ACCEPT; iptables -I INPUT -m state --state NEW -m udp -p udp -s X.X.X.X/24 --dport 111 -j ACCEPT;`.
+
+Gluster's own services – For Gluster to access its bricks on each cluster node, you have to allow TCP ports 24007, 24008, and 24009, plus an additional number of ports in sequence equivalent to the number of bricks across all volumes. Thus if you have two bricks in the cluster, you have to allow ports from 24007 to 24011 (24009 plus 2). The command for this is `iptables -A INPUT -m state --state NEW -m tcp -p tcp -s X.X.X.X/24 --dport 24007:24011 -j ACCEPT`.
+
 Other access – Allow other remote connections if you want to use NFS, iSCSI, or other connectivity. You don't have to allow other ports if you plan to mount volumes with the native GlusterFS filesystem.
 The above rules allow all cluster nodes and clients from the X.X.X.X C-class network to communicate. You can also apply these rules on a per-host basis by using Y.Y.Y.Y for the IP address of each host instead of X.X.X.X/24 for the network.
 
-Don't forget to save the iptables configuration once you've added the new rules by using the command service iptables save.
+Don't forget to save the iptables configuration once you've added the new rules by using the command `service iptables save`.
 
 If you want to enable SSL on GlusterFS (not well documented and supported) [here are some tips](security.md).
+
 ***
 ## Troubleshooting
 ***
