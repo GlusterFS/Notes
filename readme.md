@@ -104,6 +104,54 @@ As a final test, to make sure the volume is available, run `gluster volume info`
 ***
 ## Tips and Tricks
 
+#### Extend volume for size - replicated-distributed volume
+
+To extend amount of disk space available on volume www add a brick on server3 and server4 (multiple of the replica count):
+```
+gluster volume add-brick www gfs3:/data/export/www gfs4:/var/export/www
+```
+
+This is now a replicated-distributed volume (2x2) and twice of disk space is available.
+
+#### Remove bricks
+
+In case you created files on this volume you need to know that part of the data on will be lost.  
+```
+gluster volume remove-brick www gfs3:/data/export/www gfs4:/var/export/www
+```
+
+Remove directory /var/export/www on gfs3 and gfs4
+
+#### Extend volume for replica count
+
+Stop volume www: 
+```gluster volume stop www```
+Delete volume www: 
+```gluster volume delete www```
+Recreate volume but increase replica count to 4 and define all four bricks:
+```
+gluster volume create www replica 4 transport tcp server1:/var/export/www server2:/var/export/www server3:/var/export/www server4:/var/export/www
+```
+Start volume www and set options:
+```
+gluster volume start www
+gluster volume set www auth.allow 192.168.56.*
+```
+Check volume status:
+```gluster volume info www```
+Volume data should become available again.
+
+#### Migrate brick
+Bricks can be easilly moved between servers. To move brick /var/export/www (volume www) from server4 to server5 execute commands below.  
+Start migration of server4:/var/export/www brick to server4:/var/export/www:  
+```gluster volume replace-brick server4:/var/export/www server5:/var/export/www start```   
+Check status of above migration:  
+```gluster volume replace-brick server4:/var/export/www server5:/var/export/www status```   
+After the migration is done you need to commit it:  
+```gluster volume replace-brick server4:/var/export/www server5:/var/export/www commit```   
+Check volume status:  
+```gluster volume info www```   
+
 #### How to manage Gluster volumes
 
 A Gluster volume is a logical entity composed of bricks, which are exported directories from servers inside the trusted pool. One pool can support numerous volumes. You can start managing Gluster volumes as soon as you have a trusted storage pool set up.
