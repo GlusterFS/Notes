@@ -2,13 +2,11 @@
 
 GlusterFS is a distributed files system that is designed to provide network storage that can be made redundant, 
 fault-tolerant and horizontally scalable. It’s particularly well suited to applications that require high-performance 
-access to large files. Gluster File System allows you to create a single volume of storage which spans multiple disks, multiple machines and even multiple data centres.
+access to large files. Gluster File System allows you to create a single volume of storage which spans multiple disks, multiple machines and even multiple data centers.
 
-Gluster is a powerful distributed storage system that helps meet the growing need for better Linux-native storage. It's easy to implement and work with, limited only by the system resources you can dedicate to it, and doesn't require you to buy any expensive vendor-specific hardware.
+Gluster it's easy to implement and work with, limited only by the system resources you can dedicate to it, and doesn't require you to buy any expensive vendor-specific hardware.
 
 Gluster's storage is build up by what it calls bricks, which are exported directories allocated on the cluster nodes. Cluster nodes are united in trusted pools that together provide storage services and share disk resources.
-
-You can check out [GlusterFS's community Website here](http://www.gluster.org/).
 
 ***
 Here's how you can build a Gluster distributed storage system yourself.
@@ -26,14 +24,20 @@ GlusterFS uses a server -> client architecture and in this example we are going 
 192.168.0.20     server2.example.com
 ```
 
+There are a couple reasons to use host names instead of IPs when you configure you node clusters.  The first one is obvious:  If the machine’s IP changes, then you’ll have to update each machine’s configuration manually to reflect the new IP.  When you attach a peer in gluster, it stores either the host name or the IP in the peers configuration file /var/lib/glusterd/peers/<UUID>.  
+
+Second reason, and this is a big one, when a gluster client connects to a particular volume a certain manifest file is downloaded to the client.  
+
+Third reason, and this one is for future planning and scalability:  By using host names in the peer probing process, this allows clients and servers alike to use non-uniform IP accessing to the cluster.  If all clients and all cluster nodes are on the same subnet, by default all traffic will flow ever the same interface.  In a replicated cluster setup, you obviously don’t want the replication traffic riding on the same links as the production traffic.  This will negatively impact read/write operations to your cluster if you’re saturating your network.  Since we’re talking about a scale-out storage system, I’m guessing performance is a big factor for your production traffic, and this should be a no-brainer.
+
 Everything we do in this example needs to be run as a root user, so rather than typing sudo before all commands we can just log in as the root user: `sudo su`
 
-Add one line per server to your hosts file:
+Since a client downloads a gluster manifest file that utilizes host names, the client can resolve those host names to whichever IP the client wishes, either through DNS or the hosts file.  So, on our clusters, we have entries in /etc/hosts as follows:
 
 ```
 $ vi /etc/hosts
-192.168.0.10     server1.example.com server1
-192.168.0.20     server2.example.com server2
+172.1.1.1     gfs1
+172.1.1.2     gfs2
 ```
 
 If you are using servers that will be communicating over the public network you will need to enable these ports 111, 24007, 24008, 24009 (24009 + number of volumes) in your firewall for all servers.
@@ -44,9 +48,29 @@ Now you can install the packages glusterfs-fuse, the userspace program for manag
 
 Finally, start Gluster's daemon for the first time with the command service glusterd start. To make it start and stop automatically with the system, run the command chkconfig glusterd on.
 
-Follow the same process on each Gluster server.
+Perform this on both of your servers. If you have more than two servers, perform this command on all of the servers required for the volume.
 
-#### Step 2 - Format and mount the bricks
+You will now need each of these servers to know about the others.
+
+#### Step 2 - Configure the trusted pool
+
+Gluster unites cluster nodes into a trusted pool, and all nodes inside this pool share disk resources and offer storage services. Acting as one logical entity, a trusted pool provides redundancy, better storage performance, and scalability.
+
+To manage a new trusted pool, and in fact manage all parts of Gluster, use the Gluster console manager at /usr/sbin/gluster. This command-line tool accepts arguments for options; there is no GUI.
+
+A storage pool is created automatically when you install and start Gluster on the first cluster node. From the first node you can add the rest of the nodes after you install and start Gluster on them.
+
+For example, suppose you installed Gluster on a node with the IP address 10.1.1.1 and you want to add to the pool a node with IP 10.1.1.2. To accomplish this use the Gluster console manager with the arguments peer probe [host], as in /usr/sbin/gluster peer probe 10.1.1.2.
+
+Each of the commands should return with Probe successful which means the node is now known to this machine. You will only need to do this on one node of your cluster.
+
+Run `gluster peer status` to check each node in your cluster is aware of the other nodes.
+
+Similarly, you can remove servers from the storage pool with the command /usr/sbin/gluster peer detach [host].
+
+After adding servers to or removing them from the trusted storage pool, you should check the pool's status. Use the command /usr/sbin/gluster peer status to confirm you have the correct number of peers and their statuses.
+
+#### Step 3 - Format and mount the bricks
 
 To comply with best practices, use one disk for the operating system and dedicate one or more others for Gluster's storage only. Also, format the future Gluster storage disk with the XFS filesystem, which is fast, scalable, and reliable for distributed storage.
 
@@ -58,19 +82,24 @@ Next, format the new partition with the XFS filesystem with the command mkfs.xfs
 
 Finally, make sure the new partition /export/brick1 is automatically mounted during system boot time by adding a new row to /etc/fstab: /dev/sdb1 /export/brick1 xfs defaults 1 2.
 
-#### Step 3 - Configure the trusted pool
-
-Gluster unites cluster nodes into a trusted pool, and all nodes inside this pool share disk resources and offer storage services. Acting as one logical entity, a trusted pool provides redundancy, better storage performance, and scalability.
-
-To manage a new trusted pool, and in fact manage all parts of Gluster, use the Gluster console manager at /usr/sbin/gluster. This command-line tool accepts arguments for options; there is no GUI.
-
-A storage pool is created automatically when you install and start Gluster on the first cluster node. From the first node you can add the rest of the nodes after you install and start Gluster on them.
-
-For example, suppose you installed Gluster on a node with the IP address 10.1.1.1 and you want to add to the pool a node with IP 10.1.1.2. To accomplish this use the Gluster console manager with the arguments peer probe [host], as in /usr/sbin/gluster peer probe 10.1.1.2.
-
-Similarly, you can remove servers from the storage pool with the command /usr/sbin/gluster peer detach [host].
-
-After adding servers to or removing them from the trusted storage pool, you should check the pool's status. Use the command /usr/sbin/gluster peer status to confirm you have the correct number of peers and their statuses.
+Now we need to create the volume where the data will reside. the volume will be called datastore. First of all, we need to identify where on the host this storage is. For this example, it is /mnt/gfs_block on both nodes, but this could be any mount point of storage that you have. If the folder does not exist, it will be silently created so be sure to get the correct path on all nodes:
+```
+gluster volume create datastore replica 2 transport tcp gfs1:/data/gfs_block gfs2:/data/gfs_block
+```
+If this has been sucessful, you should see:
+```
+Creation of volume testvol has been successful. Please start the volume to access data.
+```
+As the message indicates, we now need to start the volume:
+```
+gluster volume start datastore
+```
+Running either of the below commands should indicate that GlusterFS is up and running. The ps command should show the command running with both servers in the argument. netstat should show a connection between both nodes.
+```
+ps aux | grep gluster
+netstat -tap | grep glusterfsd
+```
+As a final test, to make sure the volume is available, run `gluster volume info`.
 
 ***
 ## Tips and Tricks
@@ -149,8 +178,10 @@ If you want to enable SSL on GlusterFS (not well documented and supported) [here
 ## Changes
 ***
 #### Resources
+You can check out [GlusterFS's community Website here](http://www.gluster.org/).  
 [Documenting the undocumented](http://www.gluster.org/community/documentation/index.php/Documenting_the_undocumented)
 ***
 #### References
+http://www.openlogic.com/wazi/bid/284663/Create-distributed-storage-with-Gluster   
 http://funwithlinux.net/2013/02/glusterfs-tips-and-tricks-centos/  
 http://superrb.com/blog/2011/10/14/high-availability-file-system-for-load-balanced-webservers-with-glusterfs-and-ubuntu
