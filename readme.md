@@ -344,6 +344,14 @@ If you want to enable SSL on GlusterFS (not well documented and supported) [here
 
 ***
 ## Troubleshooting
+
+#### Volume creation fails and gives error "volume create: www: failed: /data/brick1/gv0 is already part of a volume", eventhough that brick is not part of any volume.
+
+This is resolvable by removing the attributes from the brick(s) that are failing to add. Use:  
+```
+setfattr -x trusted.gfid dir/brick
+setfattr -x trusted.glusterfs.volume-id dir/brick
+```
 ***
 ## FAQ
 ***
