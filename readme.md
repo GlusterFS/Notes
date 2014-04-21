@@ -10,7 +10,27 @@ Gluster's storage is build up by what it calls bricks, which are exported direct
 
 ***
 Here's how you can build a Gluster distributed storage system yourself.
-## Quick Start Guide
+
+## Very Quick Start Guide
+
+```
+service glusterd stop
+kill 
+mv glusterd glusterd.OLD
+service glusterd start
+gluster peer probe gs2
+gluster peer status
+gluster volume info
+rm -rf /data/brick1/gv0
+gluster volume create gv0 replica 2 transport tcp gs1:/data/brick1/gv0 gs2:/data/brick1/gv0
+gluster volume start gv0
+gluster volume info
+mkdir -p /var/www/gv1
+mount -t glusterfs gs1:gv0 /var/www/gv0
+df
+```
+
+## Detailed Setup
 
 #### Step 1 - Installing GlusterFS
 
