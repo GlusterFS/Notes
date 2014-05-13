@@ -28,7 +28,17 @@ make install
 ```
 (Note: If configure fails, try running ./bootstrap.sh first)
 
+Once installed, on the remote host run iperf3 in client mode. If you wish to run the server in daemon mode, add -D to the command. 
 
+```
+iperf3 -s -i 1
+```
+
+iperf has many configurable options for testing network throughput. For our test, we will use TCP connections to a remote server at <IP address of server>. The test will use 4 threads, each sending data and the test will be performed in both directions.
+
+```
+iperf3 -c <IP address of server> -i 1 -t 60
+```
 
 ## Filesystem IO Performance
 
