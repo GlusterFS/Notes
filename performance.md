@@ -16,7 +16,17 @@ iperf3 is a new implementation from scratch, with the goal of a smaller, simpler
 
 The basics of using iperf are simple. Install it on a server and a client, then run `iperf -s` on the server and `iperf -c <IP address of server>` on the client. The -s option signifies server, whilst the -c option indicates client. You need to specify the IP address of the server to connect to with the -c option. Running iperf with -h prints out the options. The -i option defines the interval in seconds that iperf reports the metrics. The default time that the iperf client will run is 10 seconds, but this can be changed using the -t option. By default, the iperf server listens on port 5001, but this can be changed if required.
 
+### Installing iperf3
 
+Github repo here: https://github.com/esnet/iperf
+
+To check out the most recent code, do `git clone https://github.com/esnet/iperf.git`
+```
+./configure
+make
+make install
+```
+(Note: If configure fails, try running ./bootstrap.sh first)
 
 
 
