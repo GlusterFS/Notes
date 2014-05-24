@@ -1,3 +1,17 @@
+## GlusterFS recipes: unofficial guides for using GlusterFS
+
+This repository is co-maintained by volunteers/contributors like you.
+
+## Contributing
+
+See [contributing.md](contributing.md) for contribution guidelines.
+
+## Notes on the reliability of guides/scripts
+
+* We will try to test everything before accepting PRs, in a clean, newly installed platform.
+* You should read any note/guide/script and understand what it does prior to implementing it.
+* If something goes wrong and you think the notes/guides/scripts needs fixing, file a bug report or a submit a Pull Request.
+
 # GlusterFS
 
 GlusterFS is a distributed files system that is designed to provide network storage that can be made redundant, 
