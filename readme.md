@@ -253,7 +253,7 @@ Create the geo-replication volume with Gluster and replace the below values with
 
 * [SOURCE_DATASTORE] – is the local Gluster data volume which will be replicated to the remote server.
 * [REMOTE_SERVER] – is the remote server to receive all the replication data.
-* [REMOATE_PATH] – is the path on the remote server to store the files.
+* [REMOTE_PATH] – is the path on the remote server to store the files.
 
 ```
 gluster volume geo-replication [SOURCE_DATASTORE] [REMOTE_SERVER]:[REMOTE_PATH] start
